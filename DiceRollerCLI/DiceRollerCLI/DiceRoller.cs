@@ -17,16 +17,18 @@ namespace DiceRollerCLI
             var rand = new Random();
             var text = string.Empty;
             var allDice = new List<List<DiceRoll>>();
+            var namedDiceRolls = new Dictionary<string, string>();
             do
             {
                 Console.Write("> ");
                 var tempText = Console.ReadLine().Trim().ToLower();
                 if (tempText == "h" || tempText == "help")
                 {
-                    Console.WriteLine("- [n]d[m][ + [x]d[y]] - dice roll, optional plus for multiple dice");
-                    Console.WriteLine("- c, clear - clear stats");
-                    Console.WriteLine("- r, rand - reset random number generator");
-                    Console.WriteLine("- q - quit");
+                    Console.WriteLine("- [n]d[m][ + [x]d[y]] = dice roll, optional plus for multiple dice");
+                    Console.WriteLine("- '', empty, no input = repeat previous roll");
+                    Console.WriteLine("- 'c', 'clear' = clear stats");
+                    Console.WriteLine("- 'r', 'rand' = reset random number generator");
+                    Console.WriteLine("- 'q' = quit");
                     text = string.Empty;
                 }
                 else if (tempText == "c" || tempText == "clear")
@@ -41,6 +43,33 @@ namespace DiceRollerCLI
                     rand = new Random();
                     text = string.Empty;
                 }
+                else if (tempText.Contains("="))
+                {
+                    var parts = tempText.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(a => a.Trim())
+                        .ToList();
+                    if (parts.Count != 2)
+                    {
+                        Console.WriteLine("Invalid syntax for assigning a named roll");
+                        Console.WriteLine("Expected format: 'key = value'");
+                        Console.WriteLine("e.g.: 'sneak_attack = d4 + 5d6'");
+                    }
+                    else
+                    {
+                        var key = parts[0];
+                        var value = parts[1];
+                        text = value;
+                        if (namedDiceRolls.ContainsKey(key))
+                        {
+                            Console.WriteLine("Replacing existing named dice roll");
+                        }
+                        namedDiceRolls[key] = value;
+                    }
+                }
+                else if (namedDiceRolls.TryGetValue(tempText, out var namedValue))
+                {
+                    text = namedValue;
+                }
                 else if (tempText != string.Empty)
                 {
                     text = tempText;
@@ -49,9 +78,7 @@ namespace DiceRollerCLI
                 if (text != string.Empty && text != "q")
                 {
                     Console.WriteLine($"Dice roll: {text}");
-                    var dice = text.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(a => Parse(rand, a.Trim()))
-                        .ToList();
+                    var dice = ParseText(rand, text);
                     allDice.AddRange(dice);
 
                     PrintDice(dice);
@@ -60,7 +87,14 @@ namespace DiceRollerCLI
             } while (text != "q");
         }
 
-        private static List<DiceRoll> Parse(Random rand, string text)
+        private static List<List<DiceRoll>> ParseText(Random rand, string text)
+        {
+            return text.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(a => ParseDice(rand, a.Trim()))
+                .ToList();
+        }
+
+        private static List<DiceRoll> ParseDice(Random rand, string text)
         {
             var parts = text.Split(new[] { 'd' }, StringSplitOptions.RemoveEmptyEntries);
             var numDice = 1;
