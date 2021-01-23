@@ -3,7 +3,8 @@ Dice Roller CLI
 Intended use for D&D
 
 # Usage
-`>` is the prompt
+`>` is the prompt.
+
 Some basic commands are:
 * Roll 1 x d20 - `> d20`
 * Roll 3 x d6 - `> 3d6`
